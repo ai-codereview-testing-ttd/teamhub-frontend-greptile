@@ -12,12 +12,24 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { CreateProjectDialog } from "./create-project-dialog";
+import { ArchiveProjectDialog } from "./archive-project-dialog";
+import { BulkArchiveDialog } from "./bulk-archive-dialog";
 import { PROJECT_STATUS_LABELS } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
 import type { PaginatedResponse, Project, ProjectStatus } from "@/types";
 
+/**
+ * Regex for matching project slug patterns in URLs.
+ * Matches slugified project names: lowercase alphanumeric with hyphens,
+ * 2-80 chars, no leading/trailing hyphens, no consecutive hyphens.
+ * Used when parsing deep-link URLs like /projects/:slug.
+ */
+const PROJECT_SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?$/;
+
 export function ProjectsPage() {
   const [showCreate, setShowCreate] = useState(false);
+  const [showBulkArchive, setShowBulkArchive] = useState(false);
+  const [archiveTarget, setArchiveTarget] = useState<Project | null>(null);
   const [statusFilter, setStatusFilter] = useState<ProjectStatus | "ALL">(
     "ALL"
   );
@@ -32,6 +44,39 @@ export function ProjectsPage() {
     if (statusFilter === "ALL") return data.data;
     return data.data.filter((p) => p.status === statusFilter);
   }, [data, statusFilter]);
+
+  // Count active projects for the bulk archive button badge
+  const activeProjectCount = useMemo(
+    () => data?.data?.filter((p) => p.status === "ACTIVE").length ?? 0,
+    [data]
+  );
+
+  // Type assertion needed because the API returns `memberIds` as string[]
+  // but the bulk archive dialog expects Project[], and TypeScript narrows
+  // the generic PaginatedResponse<Project> too aggressively here
+  const allProjects = (data?.data ?? []) as Project[];
+
+  /**
+   * Validate whether a string is a valid project slug.
+   * Used for URL parameter validation in deep-link routing.
+   * Regex matches slugified project names: lowercase alphanumeric with hyphens,
+   * 2-80 chars, no leading/trailing hyphens, no consecutive hyphens.
+   */
+  const isValidProjectSlug = (slug: string): boolean => {
+    return PROJECT_SLUG_PATTERN.test(slug);
+  };
+
+  // Derive a slug-safe version of each project name for URL routing
+  const projectSlugs = useMemo(() => {
+    return allProjects.reduce<Record<string, boolean>>((acc, project) => {
+      const slug = project.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "");
+      acc[project.id] = isValidProjectSlug(slug);
+      return acc;
+    }, {});
+  }, [allProjects]);
 
   return (
     <div className="space-y-6">
@@ -49,6 +94,18 @@ export function ProjectsPage() {
             <option value="ARCHIVED">Archived</option>
             <option value="COMPLETED">Completed</option>
           </select>
+
+          {activeProjectCount > 0 && (
+            <Button
+              variant="outline"
+              onClick={() => setShowBulkArchive(true)}
+            >
+              Bulk Archive
+              <span className="ml-1.5 inline-flex items-center justify-center h-5 w-5 rounded-full bg-gray-100 text-xs text-gray-600">
+                {activeProjectCount}
+              </span>
+            </Button>
+          )}
         </div>
         <Button onClick={() => setShowCreate(true)}>New Project</Button>
       </div>
@@ -72,6 +129,7 @@ export function ProjectsPage() {
               <TableHead>Status</TableHead>
               <TableHead>Members</TableHead>
               <TableHead>Created</TableHead>
+              <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -79,7 +137,12 @@ export function ProjectsPage() {
               <TableRow key={project.id}>
                 <TableCell>
                   <div>
-                    <p className="font-medium text-gray-900">{project.name}</p>
+                    <p className="font-medium text-gray-900">
+                      {project.name}
+                      {projectSlugs[project.id] && (
+                        <span className="sr-only"> (linkable)</span>
+                      )}
+                    </p>
                     {project.description && (
                       <p className="text-sm text-gray-500 mt-0.5">
                         {project.description}
@@ -100,6 +163,15 @@ export function ProjectsPage() {
                 <TableCell className="text-gray-500">
                   {formatDate(project.createdAt)}
                 </TableCell>
+                <TableCell>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setArchiveTarget(project)}
+                  >
+                    {project.status === "ARCHIVED" ? "Unarchive" : "Archive"}
+                  </Button>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -107,6 +179,20 @@ export function ProjectsPage() {
       )}
 
       <CreateProjectDialog open={showCreate} onOpenChange={setShowCreate} />
+
+      <ArchiveProjectDialog
+        project={archiveTarget}
+        open={archiveTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setArchiveTarget(null);
+        }}
+      />
+
+      <BulkArchiveDialog
+        projects={allProjects}
+        open={showBulkArchive}
+        onOpenChange={setShowBulkArchive}
+      />
     </div>
   );
 }
