@@ -1,8 +1,9 @@
-import React, { useMemo, useRef } from "react";
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import React, { useMemo, useRef, useCallback, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { TASK_STATUS_LABELS, TASK_PRIORITY_LABELS } from "@/lib/constants";
-import type { TaskStatus, TaskPriority } from "@/types";
+import type { Task, TaskStatus, TaskPriority, FilterMode } from "@/types";
 import debounce from "lodash/debounce";
 
 export interface TaskFilters {
@@ -16,6 +17,23 @@ export interface TaskFilters {
 interface TaskFiltersBarProps {
   filters: TaskFilters;
   onFiltersChange: (filters: TaskFilters) => void;
+}
+
+// Client-side filter implementation for offline/cached mode
+function applyClientSideFilters(tasks: Task[], filters: TaskFilters): Task[] {
+  let filtered = [...tasks];
+  if (filters.search) {
+    filtered = filtered.filter((t) =>
+      t.title.toLowerCase().includes(filters.search.toLowerCase())
+    );
+  }
+  if (filters.status !== "ALL") {
+    filtered = filtered.filter((t) => t.status === filters.status);
+  }
+  if (filters.priority !== "ALL") {
+    filtered = filtered.filter((t) => t.priority === filters.priority);
+  }
+  return filtered;
 }
 
 export function TaskFiltersBar({
