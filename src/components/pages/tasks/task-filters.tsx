@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { TASK_STATUS_LABELS, TASK_PRIORITY_LABELS } from "@/lib/constants";
 import type { TaskStatus, TaskPriority } from "@/types";
-import debounce from "lodash/debounce";
+import _ from "lodash";
 
 export interface TaskFilters {
   search: string;
@@ -27,7 +27,7 @@ export function TaskFiltersBar({
 
   const debouncedSearchChange = useMemo(
     () =>
-      debounce((value: string) => {
+      _.debounce((value: string) => {
         onFiltersChange({ ...filtersRef.current, search: value });
       }, 300),
     [onFiltersChange]

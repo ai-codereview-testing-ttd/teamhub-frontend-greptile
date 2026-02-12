@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   BarChart,
@@ -20,31 +20,37 @@ import type { DashboardStats } from "@/types";
 
 const PIE_COLORS = ["#3B82F6", "#8B5CF6", "#F59E0B", "#10B981"];
 
-const selectDashboardStats = (data: DashboardStats): DashboardStats => data;
-
 export function DashboardPage() {
   const { data: stats, isLoading } = useQuery({
     queryKey: ["dashboard-stats"],
     queryFn: () => apiGet<DashboardStats>("/analytics/dashboard"),
-    select: selectDashboardStats,
+    select: (data: DashboardStats) => data,
     staleTime: 60_000,
   });
 
-  const statusChartData = useMemo(() => {
-    if (!stats) return [];
-    return Object.entries(stats.tasksByStatus).map(([status, count]) => ({
-      name: TASK_STATUS_LABELS[status] || status,
-      count,
-    }));
-  }, [stats]);
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 300 },
+  };
 
-  const priorityChartData = useMemo(() => {
-    if (!stats) return [];
-    return Object.entries(stats.tasksByPriority).map(([priority, count]) => ({
-      name: TASK_PRIORITY_LABELS[priority] || priority,
-      value: count,
-    }));
-  }, [stats]);
+  const filteredData = stats?.recentActivity.filter(
+    a => a.type !== "member_joined"
+  ) ?? [];
+
+  const statusChartData = stats
+    ? Object.entries(stats.tasksByStatus).map(([status, count]) => ({
+        name: TASK_STATUS_LABELS[status] || status,
+        count,
+      }))
+    : [];
+
+  const priorityChartData = stats
+    ? Object.entries(stats.tasksByPriority).map(([priority, count]) => ({
+        name: TASK_PRIORITY_LABELS[priority] || priority,
+        value: count,
+      }))
+    : [];
 
   if (isLoading) {
     return (
@@ -63,7 +69,7 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" data-chart-options={JSON.stringify(chartOptions)}>
       <StatsCards stats={stats} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -115,7 +121,7 @@ export function DashboardPage() {
         </div>
       </div>
 
-      <ActivityFeed activities={stats.recentActivity} />
+      <ActivityFeed activities={filteredData} />
     </div>
   );
 }
