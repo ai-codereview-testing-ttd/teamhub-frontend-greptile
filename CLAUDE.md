@@ -66,3 +66,106 @@ All forms use React Hook Form with Zod schemas for type-safe validation. Validat
 - BFF routes handle authentication and authorization
 - Sensitive data never stored in localStorage (use httpOnly cookies)
 - CSRF protection on state-changing operations
+
+## Code Examples
+
+### Form Pattern (useForm + Zod)
+
+```tsx
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+
+const schema = z.object({
+  name: z.string().min(1, "Required").max(100),
+  description: z.string().max(500),
+});
+
+type FormValues = z.infer<typeof schema>;
+
+const { register, handleSubmit, reset, formState: { errors } } = useForm<FormValues>({
+  resolver: zodResolver(schema),
+  defaultValues: { name: "", description: "" },
+});
+```
+
+Reference: `src/components/pages/projects/create-project-dialog.tsx`
+
+### Mutation Pattern (useMutation + query invalidation)
+
+```tsx
+const queryClient = useQueryClient();
+const mutation = useMutation({
+  mutationFn: (data: CreateInput) => apiPost<Project>("/projects", data),
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ["projects"] });
+    addToast({ title: "Created successfully" });
+    reset();
+  },
+  onError: (error: Error) => {
+    addToast({ title: "Failed", description: error.message, variant: "destructive" });
+  },
+});
+```
+
+Reference: `src/components/pages/projects/create-project-dialog.tsx`
+
+### API Call Pattern (typed helpers)
+
+```tsx
+import { apiGet, apiPost, apiPatch } from "@/lib/requests";
+
+// GET with typed response
+const data = await apiGet<DashboardStats>("/analytics/dashboard");
+
+// POST with typed body and response
+const project = await apiPost<Project>("/projects", { name, description });
+
+// PATCH with typed body and response
+const updated = await apiPatch<Project>(`/projects/${id}`, { name });
+```
+
+Reference: `src/lib/requests.ts`
+
+### Query Pattern (useQuery with typed response)
+
+```tsx
+const { data: stats, isLoading } = useQuery({
+  queryKey: ["dashboard-stats"],
+  queryFn: () => apiGet<DashboardStats>("/analytics/dashboard"),
+  staleTime: 60_000,
+});
+```
+
+Reference: `src/components/pages/dashboard/dashboard-page.tsx`
+
+## Common Anti-Patterns
+
+These are patterns that should be flagged during code review:
+
+- **Manual `useState` for form fields** — Use React Hook Form + Zod instead
+- **`dangerouslySetInnerHTML` without DOMPurify** — Always sanitize HTML
+- **`any` types with eslint-disable** — Use proper typing or `unknown`
+- **Mutating React state directly** — e.g., `array.splice()` or `array.push()` on state; always create new references
+- **Array index as React key on dynamic lists** — Use stable IDs on lists that can be filtered, sorted, or reordered
+- **Full lodash import** — Use specific subpath imports (e.g., `lodash/debounce`)
+- **Storing tokens/secrets in localStorage** — Use httpOnly cookies
+- **Unvalidated redirect URLs from query params** — Must validate before redirecting
+- **Stale closures** — Incorrect `useCallback`/`useEffect` dependency arrays that capture stale values
+
+## Security Checklist
+
+- Validate redirect URLs: must start with `/`, must not start with `//`
+- Never display full API secrets; show prefix only after creation
+- Use DOMPurify for any HTML rendering via `dangerouslySetInnerHTML`
+- BFF routes must validate auth tokens on every request
+- Sanitize all user input before display to prevent XSS
+- Never include sensitive data in URL query parameters
+
+## Testing Conventions
+
+- Tests live in the `tests/` directory at the project root
+- Naming convention: `{module}.test.ts`
+- Structure: `describe`/`it` blocks with Jest matchers
+- Pure utility functions should have tests; components don't require tests
+- Reference files: `tests/auth.test.ts`, `tests/utils.test.ts`
