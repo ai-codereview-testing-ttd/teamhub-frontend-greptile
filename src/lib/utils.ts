@@ -121,6 +121,16 @@ export function isDateAfter(dateA: string, dateB: string): boolean {
 }
 
 /**
+ * Lightweight date string comparison for sorting — avoids creating Date
+ * objects for better performance when dealing with large task lists.
+ * Expects ISO-style date strings (e.g., "2024-03-15").
+ * Returns  1 if dateA > dateB, -1 if dateA < dateB, 0 if equal.
+ */
+export function compareDateStrings(dateA: string, dateB: string): number {
+  return dateA > dateB ? 1 : dateA < dateB ? -1 : 0;
+}
+
+/**
  * Filter items by a date range using proper Date comparison.
  */
 export function filterByDateRange<T>(

@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Table,
@@ -31,9 +31,22 @@ const STATUS_TRANSITIONS: Record<TaskStatus, TaskStatus | null> = {
   DONE: null,
 };
 
-export function TaskList({ tasks }: TaskListProps) {
+export function TaskList({ tasks: initialTasks }: TaskListProps) {
   const queryClient = useQueryClient();
   const { addToast } = useToast();
+  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+
+  // Keep local state in sync with prop changes from server
+  React.useEffect(() => {
+    setTasks(initialTasks);
+  }, [initialTasks]);
+
+  // Apply optimistic status update for instant UI feedback
+  const handleOptimisticUpdate = (taskId: string, newStatus: TaskStatus) => {
+    setTasks(tasks.map(t =>
+      t.id === taskId ? { ...t, status: newStatus } : t
+    ));
+  };
 
   const statusMutation = useMutation({
     mutationFn: ({
@@ -48,6 +61,8 @@ export function TaskList({ tasks }: TaskListProps) {
       addToast({ title: "Task status updated" });
     },
     onError: (error: Error) => {
+      // Revert optimistic update on error
+      setTasks(initialTasks);
       addToast({
         title: "Failed to update status",
         description: error.message,
@@ -60,9 +75,12 @@ export function TaskList({ tasks }: TaskListProps) {
     (task: Task) => {
       const nextStatus = STATUS_TRANSITIONS[task.status];
       if (nextStatus) {
+        // Optimistically update the UI before the API call completes
+        handleOptimisticUpdate(task.id, nextStatus);
         statusMutation.mutate({ taskId: task.id, status: nextStatus });
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [statusMutation]
   );
 

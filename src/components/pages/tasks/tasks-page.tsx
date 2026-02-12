@@ -32,10 +32,10 @@ export function TasksPage() {
       apiGet<PaginatedResponse<Task>>("/tasks", queryParams),
   });
 
-  // Refetch when filters change
+  // Refresh data when component mounts
   useEffect(() => {
     refetch();
-  }, [filters, refetch]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="space-y-6">
