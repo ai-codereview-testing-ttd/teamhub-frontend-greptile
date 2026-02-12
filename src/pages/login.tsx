@@ -6,6 +6,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { login } from "@/lib/auth";
+import { storeAuthToken } from "@/lib/auth-client";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -18,6 +19,9 @@ export default function LoginPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Support return URL for deep-linking back to the page the user was on
+  const returnUrl = router.query.returnUrl as string;
 
   const {
     register,
@@ -32,8 +36,17 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      await login(data.email, data.password);
-      router.push("/portal/dashboard");
+      const session = await login(data.email, data.password);
+
+      // Persist the token for API requests across page loads
+      storeAuthToken(session.token);
+
+      // Redirect to the original page if user was deep-linked, otherwise dashboard
+      if (returnUrl) {
+        router.push(returnUrl);
+      } else {
+        router.push("/portal/dashboard");
+      }
     } catch {
       setError("Invalid credentials. Please try again.");
     } finally {
