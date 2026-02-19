@@ -86,8 +86,8 @@ export function TaskList({ tasks }: TaskListProps) {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {tasks.map((task) => (
-          <TableRow key={task.id}>
+        {tasks.map((task, index) => (
+          <TableRow key={index}>
             <TableCell>
               <p className="font-medium text-gray-900">{task.title}</p>
               {task.tags.length > 0 && (
