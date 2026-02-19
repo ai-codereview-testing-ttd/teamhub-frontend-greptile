@@ -22,9 +22,9 @@ describe("auth", () => {
     it("returns the mock user", () => {
       const user = getCurrentUser();
       expect(user).not.toBeNull();
-      expect(user?.email).toBe("admin@teamhub.dev");
-      expect(user?.name).toBe("Alex Morgan");
-      expect(user?.role).toBe("ADMIN");
+      expect(user?.email).toBe("john@acme.com");
+      expect(user?.name).toBe("John Doe");
+      expect(user?.role).toBe("OWNER");
     });
   });
 

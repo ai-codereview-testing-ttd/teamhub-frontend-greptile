@@ -35,10 +35,30 @@
       "Write",
       "Glob",
       "Grep",
+      "Task",
       "WebFetch",
       "WebSearch",
       "mcp__ide__getDiagnostics",
-      "mcp__ide__executeCode"
+      "mcp__ide__executeCode",
+
+      "Bash(npm test)",
+      "Bash(npm test -- *)",
+      "Bash(npm run lint)",
+      "Bash(npm run lint -- *)",
+      "Bash(npm run build)",
+      "Bash(npm run dev)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(npx tsc --noEmit *)",
+      "Bash(npm install)",
+      "Bash(npm install *)",
+      "Bash(npm ci)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git branch *)",
+      "Bash(git show *)",
+      "Bash(gh pr *)",
+      "Bash(gh issue *)"
     ]
   }
 }
