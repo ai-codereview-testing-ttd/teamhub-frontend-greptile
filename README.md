@@ -111,3 +111,4 @@ See `CLAUDE.md` for project architecture and patterns Claude uses for context.
 2. Make your changes and ensure tests pass (`npm test`)
 3. Ensure the build succeeds (`npm run build`)
 4. Open a pull request
+
