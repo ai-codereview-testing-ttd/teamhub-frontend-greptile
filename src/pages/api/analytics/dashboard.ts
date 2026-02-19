@@ -6,15 +6,7 @@ export default async function handler(
   res: NextApiResponse
 ) {
   const token = req.headers.authorization;
-  const { slug, ...queryParams } = req.query;
-  const path = slug ? `/${(slug as string[]).join("/")}` : "";
-
-  const url = new URL(`${API_BASE_URL}/analytics${path}`);
-  Object.entries(queryParams).forEach(([key, value]) => {
-    if (typeof value === "string") {
-      url.searchParams.set(key, value);
-    }
-  });
+  const url = new URL(`${API_BASE_URL}/analytics/dashboard`);
 
   try {
     const response = await fetch(url.toString(), {
