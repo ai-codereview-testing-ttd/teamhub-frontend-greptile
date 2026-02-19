@@ -10,6 +10,12 @@ export type TaskPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 export type MemberRole = "OWNER" | "ADMIN" | "MEMBER" | "VIEWER";
 export type BillingTier = "FREE" | "STARTER" | "PROFESSIONAL" | "ENTERPRISE";
 
+export enum FilterMode {
+  SERVER = "SERVER",
+  CLIENT = "CLIENT",
+  STRICT = "STRICT", // Reserved for future use
+}
+
 // --- Domain Models ---
 
 export interface Project {
